@@ -69,6 +69,9 @@ aside .hint { margin: 2px 0 10px; color: var(--muted); font-size: .88rem; }
 .spot.on { background: rgba(199,154,43,.18); border-color: var(--gold); }
 .spot .lbl { position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); white-space: nowrap; background: var(--green-950); color: #fff; font: 500 .85rem/1.4 var(--body); padding: 4px 10px; border-radius: 4px; opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 3; }
 .spot:hover .lbl, .spot:focus-visible .lbl { opacity: 1; }
+/* เลขขั้นตอนบนผัง (ไม่ได้อยู่ในภาพ — มาจากช่อง "เลขขั้นตอน" ของจุด) */
+.spot .badge { position: absolute; top: 6px; left: 6px; min-width: clamp(20px, 2.2vw, 32px); height: clamp(20px, 2.2vw, 32px); padding: 0 .4em; border-radius: 999px; background: var(--maroon); color: #fff; font: 700 clamp(.7rem, 1.1vw, 1rem)/clamp(20px, 2.2vw, 32px) var(--head); text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,.25); pointer-events: none; }
+.spot.on .badge { background: var(--gold); color: var(--green-950); }
 .pin { position: absolute; transform: translate(-50%, -100%); pointer-events: none; z-index: 4; display: flex; flex-direction: column; align-items: center; }
 .pin svg { width: 40px; height: 52px; filter: drop-shadow(0 3px 4px rgba(0,0,0,.3)); animation: drop .5s cubic-bezier(.3,1.6,.6,1); }
 .pin span { order: -1; background: var(--maroon); color: #fff; font: 600 .9rem/1.4 var(--head); padding: 4px 12px; border-radius: 4px; white-space: nowrap; margin-bottom: 4px; }
@@ -103,4 +106,6 @@ dialog::backdrop { background: rgba(10,44,29,.55); }
   .list { max-height: 38vh; overflow-y: auto; }
   .planwrap { padding: 8px; }
   .spot .lbl { display: none; }
+  .pin svg { width: 24px; height: 32px; }
+  .pin span { font-size: .7rem; padding: 2px 6px; margin-bottom: 2px; }
 }

@@ -36,8 +36,8 @@ function showFloor(id) {
   $('#plan').innerHTML = `<img src="${esc(f.image)}" alt="แผนผัง${esc(f.name)}"><div class="layer" id="layer"></div>`;
   $('#plan img').onerror = () => $('#plan').innerHTML = `<p class="msg">เปิดภาพผัง${esc(f.name)}ไม่ได้ — ตรวจลิงก์ภาพในชีต</p>`;
   $('#layer').innerHTML = D.spots.filter(s => s.floor === id).map(s =>
-    `<button class="spot" data-id="${esc(s.id)}" aria-label="${esc(s.name)}"
-       style="left:${s.left}%;top:${s.top}%;width:${s.width}%;height:${s.height}%"><span class="lbl">${esc(s.name)}</span></button>`).join('');
+    `<button class="spot" data-id="${esc(s.id)}" aria-label="${s.no ? 'ขั้นตอน ' + esc(s.no) + ' ' : ''}${esc(s.name)}"
+       style="left:${s.left}%;top:${s.top}%;width:${s.width}%;height:${s.height}%"><span class="lbl">${esc(s.name)}</span>${s.no ? `<span class="badge" aria-hidden="true">${esc(s.no)}</span>` : ''}</button>`).join('');
   $('#layer').onclick = e => { const b = e.target.closest('.spot'); if (b) select(D.spots.find(s => s.id === b.dataset.id), true); };
   if (current && current.floor !== id) current = null;
   drawPin();
