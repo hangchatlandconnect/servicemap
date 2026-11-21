@@ -17,6 +17,9 @@ button, input, textarea, select { font: inherit; color: inherit; }
 /* หัวเว็บ */
 .top { background: var(--green-900); color: #fff; border-bottom: 3px solid var(--gold); }
 .top .in { max-width: 1400px; margin: 0 auto; padding: 18px 20px; display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.brand { display: flex; gap: 14px; align-items: center; }
+.logo { width: 64px; height: auto; flex: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
+@media (max-width: 860px) { .logo { width: 48px; } }
 .top h1 { color: #fff; font-size: clamp(1.25rem, 1rem + 1vw, 1.7rem); font-weight: 600; }
 .top p { margin: 2px 0 0; color: #cfe0d5; font-size: .95rem; }
 .top a { color: #cfe0d5; font-size: .92rem; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.3); }

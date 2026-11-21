@@ -8,12 +8,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/map.css">
-<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/map.css?v=3">
+<link rel="stylesheet" href="css/admin.css?v=3">
 </head>
 <body>
 <header class="top"><div class="in">
-  <div><h1>จัดการแผนผังอาคาร</h1><p>วาด ย้าย และแก้รายละเอียดจุดบริการ</p></div>
+  <div class="brand"><img class="logo" src="assets/logo.png" alt="" width="64" height="63">
+    <div><h1>จัดการแผนผังอาคาร</h1><p>วาด ย้าย และแก้รายละเอียดจุดบริการ</p></div></div>
   <nav class="topnav"><a href="index.html">ดูหน้าแผนผัง</a> <button class="link" id="logout" hidden>ออกจากระบบ</button></nav>
 </div></header>
 <div class="demo" id="demo" hidden>โหมดตัวอย่าง — ยังไม่ได้เชื่อม Google Sheet ปุ่มบันทึกจะดาวน์โหลดไฟล์ JSON แทน</div>
@@ -83,7 +84,7 @@
 </main>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="js/common.js"></script>
-<script src="js/admin.js"></script>
+<script src="js/common.js?v=3"></script>
+<script src="js/admin.js?v=3"></script>
 </body>
 </html>
