@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แผนผังอาคาร</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/map.css">
+</head>
+<body>
+<header class="top"><div class="in">
+  <div><h1 id="title">แผนผังอาคาร</h1><p id="subtitle"></p></div>
+  <a href="admin.html">สำหรับเจ้าหน้าที่</a>
+</div></header>
+<div class="demo" id="demo" hidden>โหมดตัวอย่าง — ผังและจุดบริการยังเป็นข้อมูลสาธิต</div>
+
+<main class="layout">
+  <aside class="panel">
+    <section class="steps" id="stepBox" hidden>
+      <h2>ขั้นตอนการเข้ารับบริการ <small id="stepFloor"></small></h2>
+      <ol id="steps"></ol>
+      <div class="qr" id="qr"></div>
+    </section>
+    <div class="hd">
+      <h2>ค้นหาจุดบริการ</h2>
+      <p class="hint">เลือกจุดบริการเพื่อปักหมุดบนแผนผัง</p>
+      <input class="search" id="q" type="search" placeholder="พิมพ์ชื่อห้องหรือบริการ" aria-label="ค้นหาจุดบริการ">
+    </div>
+    <ul class="list" id="list"></ul>
+  </aside>
+  <section>
+    <div class="floors" id="floors" role="tablist" aria-label="เลือกชั้น"></div>
+    <div class="panel planwrap">
+      <div class="plan" id="plan"><p class="msg">กำลังโหลดแผนผัง…</p></div>
+    </div>
+  </section>
+</main>
+
+<dialog id="detail" aria-labelledby="dTitle">
+  <div class="dlg-hd"><div><h2 id="dTitle"></h2><small id="dFloor"></small></div>
+    <button class="x" id="dClose" aria-label="ปิด">×</button></div>
+  <div class="gallery" id="gallery" hidden>
+    <img id="gImg" alt="">
+    <button class="nav prev" id="gPrev" aria-label="ภาพก่อนหน้า">‹</button>
+    <button class="nav next" id="gNext" aria-label="ภาพถัดไป">›</button>
+    <span class="count" id="gCount"></span>
+  </div>
+  <div class="dlg-body" id="dBody"></div>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="js/common.js"></script>
+<script src="js/map.js"></script>
+</body>
+</html>

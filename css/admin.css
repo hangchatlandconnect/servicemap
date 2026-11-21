@@ -1,0 +1,55 @@
+.topnav { display: flex; gap: 16px; align-items: center; }
+.link { border: 0; background: none; color: #cfe0d5; cursor: pointer; padding: 0; border-bottom: 1px solid rgba(255,255,255,.3); font-size: .92rem; }
+.link:hover { color: #fff; }
+
+.btn { border: 1px solid var(--line); background: var(--paper); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+.btn:hover { border-color: var(--green-600); }
+.btn.primary { background: var(--green-700); border-color: var(--green-700); color: #fff; }
+.btn.primary:hover { background: var(--green-900); }
+.btn.danger { color: var(--maroon); border-color: #e9cfc9; }
+.btn.danger:hover { background: #fbefec; border-color: var(--maroon); }
+.btn:disabled { opacity: .5; cursor: default; }
+
+.login { max-width: 380px; margin: 48px auto; padding: 28px; display: grid; gap: 14px; }
+.login h2 { font-size: 1.25rem; font-weight: 600; }
+.err { color: var(--maroon); margin: 0; min-height: 1.4em; font-size: .92rem; }
+
+label { display: grid; gap: 4px; font-size: .9rem; font-weight: 500; color: var(--ink); }
+label small { font-weight: 400; color: var(--muted); }
+input:not([type=checkbox]), textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; font-weight: 400; }
+input:focus, textarea:focus { outline: none; border-color: var(--green-600); box-shadow: 0 0 0 3px var(--green-100); }
+textarea { resize: vertical; line-height: 1.5; }
+.check { display: flex; gap: 8px; align-items: center; font-weight: 400; }
+.check input { width: 18px; height: 18px; accent-color: var(--green-700); }
+
+.side { overflow-y: auto; }
+.savebar { position: sticky; top: 0; z-index: 2; background: var(--paper); display: flex; gap: 12px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.state { font-size: .88rem; color: var(--muted); }
+.state.dirty { color: var(--maroon); font-weight: 600; }
+.box { padding: 14px 16px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+.box h2 { font-size: 1rem; font-weight: 600; }
+.box h2 small { font-weight: 400; color: var(--muted); }
+.box summary { font: 600 1rem var(--head); color: var(--green-950); cursor: pointer; }
+details.box:not([open]) { gap: 0; }
+.hint { margin: 0; color: var(--muted); font-size: .88rem; line-height: 1.55; }
+#spotForm { display: grid; gap: 10px; }
+#spotForm[hidden] { display: none; }
+.nums { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.list.mini { padding: 0; max-height: 260px; }
+.list.mini button { padding: 6px 8px; }
+
+/* ผังในโหมดแก้ไข */
+.plan.edit .layer { cursor: crosshair; touch-action: none; }
+.plan.edit .spot { border: 2px solid rgba(18,96,58,.6); background: rgba(26,117,71,.1); cursor: move; }
+.plan.edit .spot:hover { background: rgba(26,117,71,.18); }
+.plan.edit .spot.sel { border-color: var(--gold); background: rgba(199,154,43,.22); z-index: 2; }
+.plan.edit .spot .lbl { position: absolute; inset: auto 4px 4px auto; left: auto; bottom: 4px; transform: none; opacity: 1; font-size: .72rem; padding: 1px 6px; background: rgba(10,44,29,.85); max-width: calc(100% - 8px); overflow: hidden; text-overflow: ellipsis; }
+.plan.edit .spot.nonav .lbl { background: rgba(91,104,97,.85); }
+.handle { position: absolute; right: -8px; bottom: -8px; width: 16px; height: 16px; background: var(--gold); border: 2px solid #fff; border-radius: 3px; cursor: nwse-resize; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.draft { position: absolute; border: 2px dashed var(--maroon); background: rgba(122,46,31,.1); border-radius: 4px; pointer-events: none; }
+
+@media (max-width: 860px) {
+  .side { order: 2; }
+  .plan.edit .spot .lbl { display: block; }
+}

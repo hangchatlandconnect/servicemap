@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>จัดการแผนผังอาคาร</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/map.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+<header class="top"><div class="in">
+  <div><h1>จัดการแผนผังอาคาร</h1><p>วาด ย้าย และแก้รายละเอียดจุดบริการ</p></div>
+  <nav class="topnav"><a href="index.html">ดูหน้าแผนผัง</a> <button class="link" id="logout" hidden>ออกจากระบบ</button></nav>
+</div></header>
+<div class="demo" id="demo" hidden>โหมดตัวอย่าง — ยังไม่ได้เชื่อม Google Sheet ปุ่มบันทึกจะดาวน์โหลดไฟล์ JSON แทน</div>
+
+<form class="panel login" id="login" hidden>
+  <h2>เข้าสู่ระบบเจ้าหน้าที่</h2>
+  <label>ชื่อผู้ใช้<input id="lu" autocomplete="username" required></label>
+  <label>รหัสผ่าน<input id="lp" type="password" autocomplete="current-password" required></label>
+  <p class="err" id="lmsg" role="alert"></p>
+  <button class="btn primary" id="lbtn">เข้าสู่ระบบ</button>
+</form>
+
+<main class="layout editor" id="editor" hidden>
+  <aside class="panel side">
+    <div class="savebar">
+      <button class="btn primary" id="save">บันทึก</button>
+      <span id="state" class="state">ข้อมูลล่าสุด</span>
+    </div>
+
+    <section class="box" id="spotBox">
+      <h2>จุดที่เลือก</h2>
+      <p class="hint" id="noSel">ลากบนผังเพื่อวาดกรอบจุดใหม่ · คลิกจุดเพื่อแก้ · ลากจุดเพื่อย้าย · ลากมุมขวาล่างเพื่อปรับขนาด</p>
+      <div id="spotForm" hidden>
+        <label>ชื่อจุดบริการ<input id="sName" maxlength="200"></label>
+        <label>เลขขั้นตอน <small>ตรงกับขั้นตอนของชั้นนี้ เช่น 3,6 (เว้นว่างถ้าไม่ใช่จุดในขั้นตอน)</small><input id="sNo" maxlength="20"></label>
+        <label>รายละเอียด<textarea id="sDesc" rows="4" maxlength="5000"></textarea></label>
+        <label>ลิงก์รูปภาพ <small>บรรทัดละ 1 รูป (ลิงก์แชร์ Google Drive ใช้ได้)</small><textarea id="sImgs" rows="3"></textarea></label>
+        <label class="check"><input type="checkbox" id="sNav"> แสดงในรายการค้นหา</label>
+        <div class="nums">
+          <label>ซ้าย %<input id="sLeft" type="number" step="0.1" min="0" max="100"></label>
+          <label>บน %<input id="sTop" type="number" step="0.1" min="0" max="100"></label>
+          <label>กว้าง %<input id="sWidth" type="number" step="0.1" min="0.5" max="100"></label>
+          <label>สูง %<input id="sHeight" type="number" step="0.1" min="0.5" max="100"></label>
+        </div>
+        <button type="button" class="btn danger" id="sDel">ลบจุดนี้</button>
+      </div>
+    </section>
+
+    <section class="box">
+      <h2>จุดบนชั้นนี้ <small id="spotCount"></small></h2>
+      <ul class="list mini" id="spotList"></ul>
+    </section>
+
+    <details class="box">
+      <summary>ตั้งค่าชั้นนี้</summary>
+      <label>ชื่อชั้น<input id="fName" maxlength="100"></label>
+      <label>ลิงก์ภาพผัง<input id="fImg" placeholder="https://… หรือ assets/hc-floor-1.jpg"></label>
+      <label>ขั้นตอนการเข้ารับบริการ <small>บรรทัดละ 1 ขั้น เรียงตามลำดับ</small><textarea id="fSteps" rows="6"></textarea></label>
+      <div class="row"><button type="button" class="btn" id="fAdd">+ เพิ่มชั้นใหม่</button>
+        <button type="button" class="btn danger" id="fDel">ลบชั้นนี้</button></div>
+    </details>
+
+    <details class="box">
+      <summary>หัวเว็บ</summary>
+      <label>ชื่อระบบ<input id="tTitle" maxlength="200"></label>
+      <label>คำบรรยาย<input id="tSub" maxlength="200"></label>
+      <label>QR Code <small>บรรทัดละ 1 รูป: ชื่อ|ลิงก์ภาพ</small><textarea id="tQr" rows="3"></textarea></label>
+    </details>
+  </aside>
+
+  <section>
+    <div class="floors" id="floors" role="tablist" aria-label="เลือกชั้น"></div>
+    <div class="panel planwrap">
+      <div class="plan edit" id="plan"><p class="msg">กำลังโหลด…</p></div>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="js/common.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

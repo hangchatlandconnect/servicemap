@@ -1,0 +1,181 @@
+/**
+ * แผนผังอาคาร — ส่วนหลังบ้านบน Google Sheet (วางทั้งไฟล์นี้ใน Apps Script ของชีต)
+ *
+ *   GET  <exec URL>                          → ข้อมูลทั้งหมดเป็น JSON (ใครก็อ่านได้ หน้าแผนผังใช้)
+ *   POST {action:'login', user, pass}        → {token}  ใช้ได้ 6 ชม.
+ *   POST {action:'save', token, data}        → เขียนทับชีต ชั้น / จุดบริการ / ตั้งค่า
+ *
+ * รหัสผ่านผู้ดูแลไม่อยู่ในโค้ดหรือหน้าเว็บ — เก็บเฉพาะ hash ใน Script Properties (ตั้งด้วย setPassword)
+ * ครั้งแรก: รัน setup() → รัน setPassword() → Deploy เป็น Web app (Execute as: Me, Who has access: Anyone)
+ */
+
+const SHEET_SETTINGS = 'ตั้งค่า';
+const SHEET_FLOORS = 'ชั้น';
+const SHEET_SPOTS = 'จุดบริการ';
+const FLOOR_COLS = ['id', 'name', 'image', 'steps'];
+const SPOT_COLS = ['id', 'floor', 'no', 'name', 'description', 'images', 'left', 'top', 'width', 'height', 'nav'];
+const NUM_COLS = ['left', 'top', 'width', 'height'];
+const SESSION_SECONDS = 6 * 60 * 60;
+const MAX_FAILS = 5; // ผิดเกิน 5 ครั้งใน 15 นาที → ล็อก
+
+// ---------- อ่าน ----------
+function doGet() {
+  return json_(readAll_());
+}
+
+function readAll_() {
+  const ss = SpreadsheetApp.getActive();
+  const settings = {};
+  rows_(ss.getSheetByName(SHEET_SETTINGS)).forEach(r => { if (r[0]) settings[r[0]] = String(r[1]); });
+  const floors = rows_(ss.getSheetByName(SHEET_FLOORS)).filter(r => r[0] !== '')
+    .map(r => { const f = obj_(FLOOR_COLS, r); f.steps = lines_(f.steps); return f; });
+  const spots = rows_(ss.getSheetByName(SHEET_SPOTS)).filter(r => r[0] !== '')
+    .map(r => {
+      const s = obj_(SPOT_COLS, r);
+      s.images = lines_(s.images);
+      s.no = String(s.no);
+      NUM_COLS.forEach(k => s[k] = Number(s[k]) || 0);
+      s.nav = !(s.nav === false || String(s.nav).toUpperCase() === 'FALSE');
+      return s;
+    });
+  // QR: บรรทัดละ "ชื่อ|ลิงก์ภาพ"
+  const qr = lines_(settings.qr).map(l => {
+    const i = l.indexOf('|');
+    return i < 0 ? { label: '', image: l } : { label: l.slice(0, i).trim(), image: l.slice(i + 1).trim() };
+  })
+    .filter(q => q.image);
+  return { title: settings.title || '', subtitle: settings.subtitle || '', qr: qr, floors: floors, spots: spots };
+}
+
+function lines_(v) {
+  return String(v || '').split(/\n+/).map(x => x.trim()).filter(String);
+}
+
+function rows_(sh) {
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).getValues();
+}
+
+function obj_(cols, r) {
+  const o = {};
+  cols.forEach((c, i) => o[c] = r[i] instanceof Date ? r[i].toISOString() : (r[i] === undefined ? '' : r[i]));
+  o.id = String(o.id);
+  if ('floor' in o) o.floor = String(o.floor);
+  return o;
+}
+
+// ---------- เขียน ----------
+function doPost(e) {
+  try {
+    const b = JSON.parse(e.postData.contents);
+    if (b.action === 'login') return json_({ token: login_(b.user, b.pass) });
+    if (b.action === 'save') {
+      if (!validToken_(b.token)) throw new Error('หมดเวลาเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่');
+      writeAll_(b.data);
+      return json_({ ok: true });
+    }
+    throw new Error('ไม่รู้จักคำสั่ง');
+  } catch (err) {
+    return json_({ error: err.message });
+  }
+}
+
+function writeAll_(d) {
+  if (!d || !Array.isArray(d.floors) || !Array.isArray(d.spots)) throw new Error('ข้อมูลไม่ครบ');
+  if (d.floors.length > 50 || d.spots.length > 2000) throw new Error('ข้อมูลมากเกินกำหนด');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const ss = SpreadsheetApp.getActive();
+    fill_(ss.getSheetByName(SHEET_SETTINGS), ['key', 'value'],
+      [['title', text_(d.title, 200)], ['subtitle', text_(d.subtitle, 200)],
+       ['qr', text_((Array.isArray(d.qr) ? d.qr : []).map(q => `${q.label}|${q.image}`).join('\n'), 3000)]]);
+    fill_(ss.getSheetByName(SHEET_FLOORS), FLOOR_COLS,
+      d.floors.map(f => [text_(f.id, 40), text_(f.name, 100), text_(f.image, 1000),
+        text_((Array.isArray(f.steps) ? f.steps : []).join('\n'), 3000)]));
+    ss.getSheetByName(SHEET_SPOTS).getRange('C:C').setNumberFormat('@'); // เลขขั้นตอน "3,6" ต้องเป็นข้อความ ไม่ใช่ตัวเลข 36
+    fill_(ss.getSheetByName(SHEET_SPOTS), SPOT_COLS, d.spots.map(s => [
+      text_(s.id, 40), text_(s.floor, 40), text_(s.no, 20), text_(s.name, 200), text_(s.description, 5000),
+      text_((Array.isArray(s.images) ? s.images : []).join('\n'), 5000),
+      pct_(s.left), pct_(s.top), pct_(s.width), pct_(s.height), s.nav !== false
+    ]));
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function fill_(sh, header, rows) {
+  sh.clearContents();
+  sh.getRange(1, 1, 1, header.length).setValues([header]).setFontWeight('bold');
+  if (rows.length) sh.getRange(2, 1, rows.length, header.length).setValues(rows);
+}
+
+// ข้อความที่ขึ้นต้นด้วย = + - @ จะกลายเป็นสูตรในชีต → ใส่ ' นำหน้า
+function text_(v, max) {
+  const s = String(v == null ? '' : v).slice(0, max);
+  return /^[=+\-@]/.test(s) ? "'" + s : s;
+}
+
+function pct_(v) {
+  const n = Number(v);
+  return isFinite(n) ? Math.round(Math.min(100, Math.max(0, n)) * 100) / 100 : 0;
+}
+
+// ---------- ล็อกอิน ----------
+function login_(user, pass) {
+  const cache = CacheService.getScriptCache();
+  const fails = Number(cache.get('login_fails') || 0);
+  if (fails >= MAX_FAILS) throw new Error('ใส่รหัสผิดหลายครั้ง กรุณารอ 15 นาที');
+  const p = PropertiesService.getScriptProperties();
+  if (!p.getProperty('ADMIN_HASH')) throw new Error('ยังไม่ได้ตั้งรหัสผ่าน — รัน setPassword() ใน Apps Script ก่อน');
+  const ok = String(user || '').trim() === p.getProperty('ADMIN_USER') &&
+    sha256_(p.getProperty('ADMIN_SALT') + String(pass || '')) === p.getProperty('ADMIN_HASH');
+  if (!ok) {
+    cache.put('login_fails', String(fails + 1), 15 * 60);
+    Utilities.sleep(800);
+    throw new Error('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+  }
+  const token = Utilities.getUuid() + Utilities.getUuid();
+  cache.put('tok_' + token, '1', SESSION_SECONDS);
+  return token;
+}
+
+function validToken_(t) {
+  return !!t && CacheService.getScriptCache().get('tok_' + t) === '1';
+}
+
+function sha256_(s) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, s, Utilities.Charset.UTF_8)
+    .map(b => ('0' + (b & 0xff).toString(16)).slice(-2)).join('');
+}
+
+function json_(o) {
+  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ---------- รันเองใน Apps Script ----------
+
+/** ตั้งชื่อผู้ใช้/รหัสผ่านผู้ดูแล: ใส่ค่าสองบรรทัดนี้ → กด Run → แล้วลบรหัสออกจากโค้ดทันที */
+function setPassword() {
+  const USER = 'admin';
+  const NEW_PASSWORD = '';
+  if (!NEW_PASSWORD) throw new Error('ใส่รหัสผ่านใหม่ใน NEW_PASSWORD ก่อนรัน แล้วลบออกหลังรันเสร็จ');
+  const salt = Utilities.getUuid().replace(/-/g, '').slice(0, 16);
+  PropertiesService.getScriptProperties().setProperties({
+    ADMIN_USER: USER, ADMIN_SALT: salt, ADMIN_HASH: sha256_(salt + NEW_PASSWORD)
+  });
+  Logger.log('ตั้งค่าแล้ว: ผู้ใช้ ' + USER + ' — อย่าลืมลบรหัสผ่านออกจากโค้ด');
+}
+
+/** สร้าง 3 ชีตพร้อมข้อมูลตัวอย่าง (รันครั้งเดียวตอนเริ่ม — ถ้ามีชีตอยู่แล้วจะไม่เขียนทับ) */
+function setup() {
+  const ss = SpreadsheetApp.getActive();
+  const made = [SHEET_SETTINGS, SHEET_FLOORS, SHEET_SPOTS].filter(n => !ss.getSheetByName(n));
+  made.forEach(n => ss.insertSheet(n));
+  if (made.length < 3) { Logger.log('มีชีตอยู่แล้ว — ไม่เขียนตัวอย่างทับ'); return; }
+  writeAll_(SAMPLE);
+  Logger.log('สร้างชีตและข้อมูลตัวอย่างแล้ว');
+}
+
+const SAMPLE = {"title": "แผนผังจุดบริการอิเล็กทรอนิกส์", "subtitle": "สำนักงานที่ดินจังหวัดลำปาง สาขาอำเภอห้างฉัตร", "qr": [{"label": "Let's Start!", "image": "assets/qr-start.jpg"}, {"label": "ประเมินความพึงพอใจ", "image": "assets/qr-survey.jpg"}], "floors": [{"id": "1", "name": "ชั้น 1", "image": "assets/hc-floor-1.jpg", "steps": ["กดรับบัตรคิวสำหรับคัดกรองเอกสาร", "คัดกรองเอกสาร/จ่ายคิวบริการ", "รับบริการตามช่องบริการ 1–4", "ชำระค่าธรรมเนียม", "สอบสวนและจดทะเบียนสิทธิและนิติกรรม", "รับเอกสารสิทธิที่ดินและสัญญากลับ", "ปรึกษา ร้องทุกข์", "สแกน QR Code ประเมินความพึงพอใจ"]}, {"id": "2", "name": "ชั้น 2 ฝ่ายรังวัด", "image": "assets/hc-floor-2.jpg", "steps": ["ยื่นเอกสาร/คำขอที่ได้จากฝ่ายทะเบียน", "ชี้ตำแหน่ง/นัดรังวัด", "ชำระค่าธรรมเนียม ห้องการเงินชั้น 1", "รับใบนัดรังวัด", "ช่างรังวัดออกทำการรังวัด", "ส่งเรื่องให้ฝ่ายทะเบียน", "ปรึกษา", "สแกน QR Code ประเมินความพึงพอใจ"]}], "spots": [{"id": "f1-1", "floor": "1", "no": "1", "name": "ตู้กดบัตรคิวอัตโนมัติ", "description": "กดรับบัตรคิวสำหรับคัดกรองเอกสาร", "images": [], "left": 42.57, "top": 26.81, "width": 10.79, "height": 12.73, "nav": true}, {"id": "f1-2", "floor": "1", "no": "2", "name": "จุดคัดกรองเอกสาร / จ่ายคิว", "description": "คัดกรองเอกสารและจ่ายคิวบริการ", "images": [], "left": 40.17, "top": 39.95, "width": 11.39, "height": 10.72, "nav": true}, {"id": "f1-3", "floor": "1", "no": "3,6", "name": "ส่วนบริการประชาชน ฝ่ายทะเบียน (ช่องบริการ 1–4)", "description": "รับบริการตามช่องบริการ 1–4 และรับเอกสารสิทธิที่ดินและสัญญากลับ", "images": [], "left": 28.54, "top": 35.12, "width": 14.15, "height": 16.76, "nav": true}, {"id": "f1-4", "floor": "1", "no": "4", "name": "ห้องการเงินและบัญชี", "description": "ชำระค่าธรรมเนียม", "images": [], "left": 62.95, "top": 31.5, "width": 25.78, "height": 22.12, "nav": true}, {"id": "f1-5", "floor": "1", "no": "5", "name": "ฝ่ายทะเบียน", "description": "สอบสวนและจดทะเบียนสิทธิและนิติกรรม", "images": [], "left": 28.54, "top": 52.28, "width": 20.98, "height": 11.39, "nav": true}, {"id": "f1-6", "floor": "1", "no": "", "name": "ฝ่ายอำนวยการ / ธุรการ รับ-ส่งหนังสือ", "description": "รับ-ส่งหนังสือราชการ", "images": [], "left": 50.36, "top": 45.58, "width": 11.99, "height": 18.1, "nav": true}, {"id": "f1-7", "floor": "1", "no": "7", "name": "ห้องเจ้าพนักงานที่ดินสาขาห้างฉัตร", "description": "ปรึกษา ร้องทุกข์", "images": [], "left": 63.55, "top": 53.62, "width": 25.18, "height": 15.42, "nav": true}, {"id": "f1-8", "floor": "1", "no": "", "name": "จุดบริการน้ำดื่ม / กาแฟฟรี", "description": "", "images": [], "left": 61.75, "top": 22.12, "width": 15.59, "height": 8.71, "nav": true}, {"id": "f1-9", "floor": "1", "no": "", "name": "ทางขึ้นชั้น 2", "description": "ฝ่ายรังวัดอยู่ชั้น 2", "images": [], "left": 10.79, "top": 40.21, "width": 16.79, "height": 10.72, "nav": true}, {"id": "f1-10", "floor": "1", "no": "", "name": "ห้องพัก / ถ่ายเอกสาร", "description": "รับประทานอาหารและถ่ายเอกสาร", "images": [], "left": 10.79, "top": 51.61, "width": 16.79, "height": 16.09, "nav": true}, {"id": "f1-11", "floor": "1", "no": "", "name": "ห้องน้ำ (หญิง / ชาย)", "description": "", "images": [], "left": 10.19, "top": 69.03, "width": 10.79, "height": 15.42, "nav": true}, {"id": "f1-12", "floor": "1", "no": "", "name": "ห้องน้ำทุกเพศ / ผู้พิการ", "description": "", "images": [], "left": 64.75, "top": 89.54, "width": 16.19, "height": 7.37, "nav": true}, {"id": "f1-13", "floor": "1", "no": "", "name": "ห้อง Server", "description": "", "images": [], "left": 10.79, "top": 22.12, "width": 16.79, "height": 17.43, "nav": false}, {"id": "f1-14", "floor": "1", "no": "", "name": "ห้องจัดเก็บสารบบที่ดิน", "description": "", "images": [], "left": 28.78, "top": 70.38, "width": 59.95, "height": 14.08, "nav": false}, {"id": "f2-1", "floor": "2", "no": "1,4", "name": "ส่วนบริการประชาชน / ฝ่ายรังวัด", "description": "ยื่นเอกสาร/คำขอที่ได้จากฝ่ายทะเบียน และรับใบนัดรังวัด", "images": [], "left": 38.29, "top": 32.39, "width": 28.18, "height": 32.39, "nav": true}, {"id": "f2-2", "floor": "2", "no": "2,5", "name": "เจ้าหน้าที่รังวัด", "description": "ชี้ตำแหน่ง/นัดรังวัด · ช่างรังวัดออกทำการรังวัด", "images": [], "left": 38.29, "top": 14.79, "width": 28.18, "height": 16.2, "nav": true}, {"id": "f2-3", "floor": "2", "no": "3,6", "name": "บันได (ลงชั้น 1)", "description": "ลงไปชำระค่าธรรมเนียมที่ห้องการเงินชั้น 1 · ส่งเรื่องให้ฝ่ายทะเบียน", "images": [], "left": 5.78, "top": 40.85, "width": 31.07, "height": 24.65, "nav": true}, {"id": "f2-4", "floor": "2", "no": "7", "name": "ห้องหัวหน้าฝ่ายรังวัด", "description": "ปรึกษา", "images": [], "left": 67.92, "top": 13.38, "width": 27.46, "height": 27.46, "nav": true}, {"id": "f2-5", "floor": "2", "no": "", "name": "ห้องประชุม", "description": "", "images": [], "left": 7.23, "top": 13.38, "width": 29.62, "height": 26.76, "nav": true}, {"id": "f2-6", "floor": "2", "no": "", "name": "ห้องพัก", "description": "รับประทานอาหาร", "images": [], "left": 67.92, "top": 41.55, "width": 27.46, "height": 23.94, "nav": false}, {"id": "f2-7", "floor": "2", "no": "", "name": "ห้องพัสดุ", "description": "", "images": [], "left": 5.06, "top": 66.2, "width": 38.29, "height": 27.46, "nav": false}, {"id": "f2-8", "floor": "2", "no": "", "name": "ห้องเก็บของ", "description": "", "images": [], "left": 44.08, "top": 66.2, "width": 24.57, "height": 27.46, "nav": false}, {"id": "f2-9", "floor": "2", "no": "", "name": "ห้องต้นร่าง", "description": "", "images": [], "left": 69.36, "top": 66.2, "width": 26.01, "height": 27.46, "nav": false}]};
+// END SAMPLE (บรรทัดบนสร้างจาก tools/make_sample.py — แก้ที่ไฟล์นั้น)
