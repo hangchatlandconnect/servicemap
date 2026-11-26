@@ -112,4 +112,8 @@ function showImg() {
 $('#gPrev').onclick = () => { imgAt = (imgAt - 1 + imgs.length) % imgs.length; showImg(); };
 $('#gNext').onclick = () => { imgAt = (imgAt + 1) % imgs.length; showImg(); };
 $('#dClose').onclick = () => $('#detail').close();
+$('#travelOpen').onclick = () => { $('#travel').showModal(); $('#tVideo').play().catch(() => {}); };
+$('#tClose').onclick = () => $('#travel').close();
+$('#travel').onclick = e => { if (e.target === $('#travel')) $('#travel').close(); };
+$('#travel').onclose = () => $('#tVideo').pause();
 $('#detail').onclick = e => { if (e.target === $('#detail')) $('#detail').close(); };

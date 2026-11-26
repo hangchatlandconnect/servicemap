@@ -8,13 +8,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/map.css?v=3">
+<link rel="stylesheet" href="css/map.css?v=4">
 </head>
 <body>
 <header class="top"><div class="in">
   <div class="brand"><img class="logo" src="assets/logo.png" alt="ตราสำนักงานที่ดิน" width="64" height="63">
     <div><h1 id="title">แผนผังอาคาร</h1><p id="subtitle"></p></div></div>
-  <a href="admin.html">สำหรับเจ้าหน้าที่</a>
+  <nav class="topnav">
+    <button class="travel-btn" id="travelOpen"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>แผนที่การเดินทาง</button>
+    <a href="admin.html">สำหรับเจ้าหน้าที่</a>
+  </nav>
 </div></header>
 <div class="demo" id="demo" hidden>โหมดตัวอย่าง — ผังและจุดบริการยังเป็นข้อมูลสาธิต</div>
 
@@ -51,9 +54,14 @@
   </div>
   <div class="dlg-body" id="dBody"></div>
 </dialog>
+<dialog id="travel" class="wide" aria-labelledby="tTitle">
+  <div class="dlg-hd"><div><h2 id="tTitle">แผนที่การเดินทาง</h2><small>เส้นทางมาสำนักงานที่ดินจังหวัดลำปาง สาขาห้างฉัตร</small></div>
+    <button class="x" id="tClose" aria-label="ปิด">×</button></div>
+  <video id="tVideo" src="assets/travel-map.mp4" controls muted loop playsinline preload="metadata"></video>
+</dialog>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="js/common.js?v=3"></script>
-<script src="js/map.js?v=3"></script>
+<script src="js/map.js?v=4"></script>
 </body>
 </html>
